@@ -26,9 +26,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Formatter;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+
+import static java.lang.Math.abs;
+import static java.lang.Math.pow;
 
 public class BluetoothClientActivity extends Activity implements OnItemClickListener {
     // 获取到蓝牙适配器
@@ -118,8 +122,35 @@ public class BluetoothClientActivity extends Activity implements OnItemClickList
                 // 判断这个设备是否是之前已经绑定过了，如果是则不需要添加，在程序初始化的时候已经添加了
                 if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
                     // 设备没有绑定过，则将其保持到arrayList集合中
-                    bluetoothDevices.add(device.getName() + ":"
+                    Log.d("aa", "设备没有绑定过   " + device.getName() + ":"
                             + device.getAddress() + "\n");
+                    short rssi = intent.getExtras().getShort(
+                            BluetoothDevice.EXTRA_RSSI);
+                    int iRssi = abs(rssi);
+                    // 将蓝牙信号强度换算为距离
+                    double power = (iRssi - 59) / 25.0;
+                    String mm = new Formatter().format("%.2f", pow(10, power)).toString();
+                    Log.d("aa", "距离    " + mm);
+                    bluetoothDevices.add(device.getName() + ":  "
+                            + device.getAddress() + "  距离:  " + mm + "m" + "\n");
+                    // 更新字符串数组适配器，将内容显示在listView中
+                    arrayAdapter.notifyDataSetChanged();
+
+                } else {
+                    Log.d("aa", "设备绑定过   " + device.getName() + ":"
+                            + device.getAddress() + "\n");
+                    short rssi = intent.getExtras().getShort(
+                            BluetoothDevice.EXTRA_RSSI);
+                    int iRssi = abs(rssi);
+                    // 将蓝牙信号强度换算为距离
+                    double power = (iRssi - 59) / 25.0;
+                    String mm = new Formatter().format("%.2f", pow(10, power)).toString();
+
+                    Log.d("aa", "距离    " + mm);
+
+
+                    bluetoothDevices.add(device.getName() + ":  "
+                            + device.getAddress() + "  距离:  " + mm + "m   已配对" + "\n");
                     // 更新字符串数组适配器，将内容显示在listView中
                     arrayAdapter.notifyDataSetChanged();
                 }
@@ -178,7 +209,7 @@ public class BluetoothClientActivity extends Activity implements OnItemClickList
         // 获取到这个设备的信息
         String s = arrayAdapter.getItem(position);
         // 对其进行分割，获取到这个设备的地址
-        String address = s.substring(s.indexOf(":") + 1).trim();
+        String address = s.substring((s.indexOf(":") + 1), s.indexOf("距")).trim();
         Log.d("TAG", address);
         // 判断当前是否还是正在搜索周边设备，如果是则暂停搜索
         if (mBluetoothAdapter.isDiscovering()) {
@@ -190,6 +221,7 @@ public class BluetoothClientActivity extends Activity implements OnItemClickList
             selectDevice = mBluetoothAdapter.getRemoteDevice(address);
             tvselectDevice.setText(selectDevice.toString());
         }
+
     }
 
     // 创建handler，接收数据
